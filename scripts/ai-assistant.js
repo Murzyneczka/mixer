@@ -1,5 +1,5 @@
 // ===== ai-assistant.js =====
-        const AIAssistant = {
+        window.AIAssistant = {
             async autoMix() {
                 UI.showAIProgress('Analyzing tracks...');
                 

@@ -1,5 +1,5 @@
 // ===== project-manager.js =====
-        const ProjectManager = {
+        window.ProjectManager = {
             newProject() {
                 if (confirm('Create a new project? All unsaved changes will be lost.')) {
                     if (RecordingManager.isRecording) {

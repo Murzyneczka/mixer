@@ -1,5 +1,5 @@
 // ===== multiband-effects.js =====
-        const MultiBandEffects = {
+        window.MultiBandEffects = {
             mbCompressor: null,
             dynamicEQ: null,
             crossovers: { 1: 250, 2: 4000 },

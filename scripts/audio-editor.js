@@ -1,5 +1,5 @@
 // ===== audio-editor.js =====
-        const AudioEditor = {
+        window.AudioEditor = {
             currentTool: 'select',
             clipboard: null,
             selectedRegions: [],
