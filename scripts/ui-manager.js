@@ -49,11 +49,13 @@
                 }
             },
 
-            switchTab(tabName) {
+            switchTab(tabName, eventTarget) {
                 document.querySelectorAll('.tab-nav-item').forEach(item => {
                     item.classList.remove('active');
                 });
-                event.target.classList.add('active');
+                if (eventTarget) {
+                    eventTarget.classList.add('active');
+                }
                 
                 document.querySelectorAll('.tab-content').forEach(content => {
                     content.classList.remove('active');
@@ -67,7 +69,7 @@
                 }
             },
 
-            toggleEffectsVisibility() {
+            toggleEffectsVisibility(event) {
                 const effectsGrid = document.getElementById('effectsGrid');
                 const toggleBtn = event.target.closest('.effects-toggle');
                 
@@ -161,7 +163,9 @@
                     AudioEngine.updateMeters();
                     
                     if (AudioEngine.currentTrack) {
-                        const progress = Tone.Transport.position / Tone.Transport.loopEnd;
+                        const seconds = Tone.Transport.seconds;
+                        const duration = AudioEngine.currentTrack.buffer.duration;
+                        const progress = duration > 0 ? seconds / duration : 0;
                         const canvas = document.getElementById('waveformCanvas');
                         const playhead = document.getElementById('playhead');
                         playhead.style.left = (progress * canvas.width) + 'px';
@@ -175,8 +179,7 @@
                 const update = () => {
                     if (!Transport.isPlaying) return;
                     
-                    const position = Tone.Transport.position;
-                    const seconds = parseFloat(position);
+                    const seconds = Tone.Transport.seconds;
                     document.getElementById('timeDisplay').textContent = this.formatDuration(seconds);
                     
                     requestAnimationFrame(update);

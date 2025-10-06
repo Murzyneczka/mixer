@@ -29,8 +29,12 @@
                 
                 Tone.Transport.start();
                 
+                // Check if any tracks are soloed
+                const hasSoloedTracks = AudioEngine.tracks.some(t => t.isSoloed);
+                
                 AudioEngine.tracks.forEach(track => {
-                    if (track.buffer && (!track.isSoloed || AudioEngine.tracks.every(t => t.isSoloed || !t.buffer))) {
+                    // Play track if it has a buffer AND (no solo tracks exist OR this track is soloed)
+                    if (track.buffer && (!hasSoloedTracks || track.isSoloed)) {
                         track.start();
                     }
                 });

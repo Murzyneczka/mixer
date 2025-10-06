@@ -250,10 +250,10 @@
             <!-- ===== TAB NAVIGATION (Mobile) ===== -->
             <div class="tab-nav">
                 <div class="tab-nav-items">
-                    <div class="tab-nav-item active" onclick="UI.switchTab('waveform')">Waveform</div>
-                    <div class="tab-nav-item" onclick="UI.switchTab('timeline')">Timeline</div>
-                    <div class="tab-nav-item" onclick="UI.switchTab('effects')">Effects</div>
-                    <div class="tab-nav-item" onclick="UI.switchTab('tracks')">Tracks</div>
+                    <div class="tab-nav-item active" onclick="UI.switchTab('waveform', this)">Waveform</div>
+                    <div class="tab-nav-item" onclick="UI.switchTab('timeline', this)">Timeline</div>
+                    <div class="tab-nav-item" onclick="UI.switchTab('effects', this)">Effects</div>
+                    <div class="tab-nav-item" onclick="UI.switchTab('tracks', this)">Tracks</div>
                 </div>
             </div>
 
@@ -353,7 +353,7 @@
                 <div class="effects-panel">
                     <div class="effects-header">
                         <div class="effects-title">Multi-Band Effects</div>
-                        <button class="effects-toggle" onclick="UI.toggleEffectsVisibility()">
+                        <button class="effects-toggle" onclick="UI.toggleEffectsVisibility(event)">
                             <i class="fas fa-chevron-down"></i>
                         </button>
                     </div>

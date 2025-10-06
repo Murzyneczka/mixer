@@ -126,20 +126,21 @@
 
                 // Disconnect existing connections
                 track.eq.disconnect();
-                track.eq.connect(lowMidFilter);
-                track.eq.connect(midLowFilter);
                 
-                // Low band path
+                // Low band path (everything below crossover 1)
+                track.eq.connect(lowMidFilter);
                 lowMidFilter.connect(lowCompressor);
                 lowCompressor.connect(lowGain);
                 
-                // Mid band path
-                midLowFilter.connect(midHighFilter);
-                midHighFilter.connect(midCompressor);
+                // Mid band path (between crossover 1 and crossover 2)
+                track.eq.connect(midLowFilter);
+                midLowFilter.connect(highMidFilter);
+                highMidFilter.connect(midCompressor);
                 midCompressor.connect(midGain);
                 
-                // High band path
-                highMidFilter.connect(highCompressor);
+                // High band path (everything above crossover 2)
+                track.eq.connect(midHighFilter);
+                midHighFilter.connect(highCompressor);
                 highCompressor.connect(highGain);
                 
                 // Merge bands
@@ -163,18 +164,17 @@
 
                 // Disconnect existing connections
                 track.eq.disconnect();
+                
+                // Connect filters in series (not parallel to avoid amplitude issues)
+                // Signal flow: track.eq -> lowFilter -> midFilter -> highFilter -> compressor chain -> track.compressor
                 track.eq.connect(lowFilter);
-                track.eq.connect(midFilter);
-                track.eq.connect(highFilter);
+                lowFilter.connect(midFilter);
+                midFilter.connect(highFilter);
                 
-                // Connect to compressors
-                lowFilter.connect(lowComp);
-                midFilter.connect(midComp);
-                highFilter.connect(highComp);
-                
-                // Merge to main chain
-                lowComp.connect(track.compressor);
-                midComp.connect(track.compressor);
+                // For dynamic EQ, we'll use the compressors in series as well
+                highFilter.connect(lowComp);
+                lowComp.connect(midComp);
+                midComp.connect(highComp);
                 highComp.connect(track.compressor);
             },
 

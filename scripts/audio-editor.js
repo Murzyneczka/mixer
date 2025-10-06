@@ -19,10 +19,14 @@
             setupEventListeners() {
                 const timeline = document.getElementById('timelineTracks');
                 
-                timeline.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-                timeline.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-                timeline.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-                timeline.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+                if (timeline) {
+                    timeline.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                    timeline.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+                }
+                
+                // Attach mousemove and mouseup to document to handle dragging outside timeline
+                document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
                 
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -32,7 +36,10 @@
                 this.selectionBox = document.createElement('div');
                 this.selectionBox.className = 'selection-box';
                 this.selectionBox.style.display = 'none';
-                document.getElementById('timelineTracks').appendChild(this.selectionBox);
+                const timelineTracks = document.getElementById('timelineTracks');
+                if (timelineTracks) {
+                    timelineTracks.appendChild(this.selectionBox);
+                }
             },
 
             setTool(tool) {
@@ -42,7 +49,10 @@
                 document.querySelectorAll('.tool-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
-                document.getElementById(`${tool}Tool`).classList.add('active');
+                const toolButton = document.getElementById(`${tool}Tool`);
+                if (toolButton) {
+                    toolButton.classList.add('active');
+                }
                 
                 UI.showToast(`${tool.charAt(0).toUpperCase() + tool.slice(1)} tool selected`, 'info');
             },
@@ -63,7 +73,10 @@
             handleMouseMove(e) {
                 if (!this.isDragging) return;
                 
-                const rect = e.currentTarget.getBoundingClientRect();
+                const timeline = document.getElementById('timelineTracks');
+                if (!timeline) return;
+                
+                const rect = timeline.getBoundingClientRect();
                 const currentX = e.clientX - rect.left;
                 const currentY = e.clientY - rect.top;
                 
