@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Audio Mixer Pro - Advanced DAW with Multi-Band Effects</title>
+    
+    <!-- Tone.js CDN -->
+    <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link rel="stylesheet" href="./styles/style.css">
+</head>
+<body>
+    <!-- ===== MOBILE OVERLAY ===== -->
+    <div class="mobile-overlay" id="mobileOverlay" onclick="UI.toggleSidebar()"></div>
+
+    <!-- ===== RECORDING MODAL ===== -->
+    <div class="recording-modal" id="recordingModal">
+        <div class="recording-content">
+            <h2 class="recording-title">
+                <i class="fas fa-circle"></i> Recording
+            </h2>
+            <div class="recording-timer" id="recordingTimer">00:00</div>
+            <div class="recording-levels active">
+                <div class="level-meter">
+                    <span class="level-label">Input L</span>
+                    <div class="level-bar">
+                        <div class="level-fill" id="inputLevelL"></div>
+                    </div>
+                </div>
+                <div class="level-meter">
+                    <span class="level-label">Input R</span>
+                    <div class="level-bar">
+                        <div class="level-fill" id="inputLevelR"></div>
+                    </div>
+                </div>
+            </div>
+            <input type="text" class="recording-input" id="recordingName" placeholder="Enter track name..." value="Recording">
+            <div class="recording-controls">
+                <button class="recording-btn pause" onclick="RecordingManager.pauseRecording()" id="pauseBtn">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="recording-btn stop" onclick="RecordingManager.stopRecording()">
+                    <i class="fas fa-stop"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TIME STRETCH MODAL ===== -->
+    <div class="modal" id="timeStretchModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Time Stretch & Pitch Shift</h2>
+                <button class="modal-close" onclick="UI.closeModal('timeStretchModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="time-stretch-controls">
+                    <div class="control-group">
+                        <label class="control-label">Time Stretch</label>
+                        <div class="control-input">
+                            <input type="range" class="slider control-slider" id="timeStretchSlider" min="50" max="200" value="100" oninput="AudioEditor.updateTimeStretch(this.value)">
+                            <span class="control-value" id="timeStretchValue">100%</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Pitch Shift</label>
+                        <div class="control-input">
+                            <input type="range" class="slider control-slider" id="pitchShiftSlider" min="-12" max="12" value="0" oninput="AudioEditor.updatePitchShift(this.value)">
+                            <span class="control-value" id="pitchShiftValue">0 st</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Algorithm</label>
+                        <select id="stretchAlgorithm" style="width: 100%; padding: 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 4px;">
+                            <option value="pitch">Preserve Pitch</option>
+                            <option value="time">Preserve Time</option>
+                            <option value="varispeed">Vari-Speed</option>
+                        </select>
+                    </div>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="AudioEditor.applyStretchPreset('double')">Double Speed</button>
+                        <button class="preset-btn" onclick="AudioEditor.applyStretchPreset('half')">Half Speed</button>
+                        <button class="preset-btn" onclick="AudioEditor.applyStretchPreset('octaveUp')">Octave Up</button>
+                        <button class="preset-btn" onclick="AudioEditor.applyStretchPreset('octaveDown')">Octave Down</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="UI.closeModal('timeStretchModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="AudioEditor.applyTimeStretch()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CROSSFADE MODAL ===== -->
+    <div class="modal" id="crossfadeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Crossfade Settings</h2>
+                <button class="modal-close" onclick="UI.closeModal('crossfadeModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="control-group">
+                    <label class="control-label">Crossfade Duration</label>
+                    <div class="control-input">
+                        <input type="range" class="slider control-slider" id="crossfadeSlider" min="0" max="5000" value="100" oninput="AudioEditor.updateCrossfade(this.value)">
+                        <span class="control-value" id="crossfadeValue">100ms</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Crossfade Curve</label>
+                    <select id="crossfadeCurve" style="width: 100%; padding: 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 4px;">
+                        <option value="linear">Linear</option>
+                        <option value="equalPower">Equal Power</option>
+                        <option value="equalGain">Equal Gain</option>
+                        <option value="s-curve">S-Curve</option>
+                    </select>
+                </div>
+                <div class="crossfade-preview">
+                    <div class="crossfade-waveform">
+                        <div class="crossfade-region" style="width: 30%;"></div>
+                        <div class="crossfade-region out" style="width: 30%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="UI.closeModal('crossfadeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="AudioEditor.applyCrossfade()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONTEXT MENU ===== -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" onclick="AudioEditor.cut()">
+            <i class="fas fa-cut"></i> Cut
+        </div>
+        <div class="context-menu-item" onclick="AudioEditor.copy()">
+            <i class="fas fa-copy"></i> Copy
+        </div>
+        <div class="context-menu-item" onclick="AudioEditor.paste()">
+            <i class="fas fa-paste"></i> Paste
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="AudioEditor.split()">
+            <i class="fas fa-scissors"></i> Split
+        </div>
+        <div class="context-menu-item" onclick="AudioEditor.trim()">
+            <i class="fas fa-crop"></i> Trim
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="UI.openModal('timeStretchModal')">
+            <i class="fas fa-clock"></i> Time Stretch
+        </div>
+        <div class="context-menu-item" onclick="UI.openModal('crossfadeModal')">
+            <i class="fas fa-exchange-alt"></i> Crossfade
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="AudioEditor.deleteRegion()">
+            <i class="fas fa-trash"></i> Delete
+        </div>
+    </div>
+
+    <!-- ===== HEADER ===== -->
+    <header class="header">
+        <button class="mobile-menu-toggle" onclick="UI.toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">
+            <div class="logo-icon">🎵</div>
+            <span>AI Mixer Pro</span>
+        </div>
+        <div class="header-controls">
+            <button class="btn btn-icon" onclick="ProjectManager.newProject()" title="New Project">
+                <i class="fas fa-file"></i>
+            </button>
+            <button class="btn btn-icon" onclick="ProjectManager.saveProject()" title="Save">
+                <i class="fas fa-save"></i>
+            </button>
+            <button class="btn btn-primary" onclick="UI.toggleAIPanel()">
+                <i class="fas fa-robot"></i>
+                <span>AI</span>
+            </button>
+            <button class="btn btn-primary" onclick="AudioEngine.exportAudio()">
+                <i class="fas fa-download"></i>
+                <span>Export</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ===== MAIN CONTAINER ===== -->
+    <div class="main-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Tracks</div>
+                <div class="file-upload" onclick="document.getElementById('fileInput').click()" ondrop="AudioEngine.handleDrop(event)" ondragover="AudioEngine.handleDragOver(event)" ondragleave="AudioEngine.handleDragLeave(event)">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Tap to add audio</div>
+                    <input type="file" id="fileInput" multiple accept="audio/*" style="display: none;" onchange="AudioEngine.handleFileSelect(event)">
+                </div>
+                <div class="track-list" id="trackList">
+                    <!-- Tracks will be added here dynamically -->
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Quick Actions</div>
+                <button class="btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="RecordingManager.startRecording()">
+                    <i class="fas fa-microphone"></i> Record Audio
+                </button>
+                <button class="btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="TrackManager.addNewTrack()">
+                    <i class="fas fa-plus"></i> Add Track
+                </button>
+                <button class="btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="TrackManager.duplicateTrack()">
+                    <i class="fas fa-copy"></i> Duplicate
+                </button>
+                <button class="btn btn-danger" style="width: 100%;" onclick="TrackManager.clearAllTracks()">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
+        </aside>
+
+        <!-- ===== MIXER SECTION ===== -->
+        <main class="mixer-section">
+            <!-- ===== TRANSPORT CONTROLS ===== -->
+            <div class="transport">
+                <button class="transport-btn" onclick="Transport.stop()">
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="transport-btn" id="playBtn" onclick="Transport.toggle()">
+                    <i class="fas fa-play" id="playIcon"></i>
+                </button>
+                <button class="transport-btn" onclick="Transport.toggleLoop()">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <div class="time-display" id="timeDisplay">00:00</div>
+                <button class="transport-btn" id="recordBtn" onclick="RecordingManager.startRecording()">
+                    <i class="fas fa-circle"></i>
+                </button>
+            </div>
+
+            <!-- ===== TAB NAVIGATION (Mobile) ===== -->
+            <div class="tab-nav">
+                <div class="tab-nav-items">
+                    <div class="tab-nav-item active" onclick="UI.switchTab('waveform')">Waveform</div>
+                    <div class="tab-nav-item" onclick="UI.switchTab('timeline')">Timeline</div>
+                    <div class="tab-nav-item" onclick="UI.switchTab('effects')">Effects</div>
+                    <div class="tab-nav-item" onclick="UI.switchTab('tracks')">Tracks</div>
+                </div>
+            </div>
+
+            <!-- ===== WAVEFORM TAB ===== -->
+            <div class="tab-content active" id="waveform-tab">
+                <div class="waveform-container">
+                    <div class="waveform">
+                        <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+                        <div class="playhead" id="playhead"></div>
+                    </div>
+                    <div class="recording-levels" id="recordingLevels">
+                        <div class="level-meter">
+                            <span class="level-label">Input L</span>
+                            <div class="level-bar">
+                                <div class="level-fill" id="inputLevelL2"></div>
+                            </div>
+                        </div>
+                        <div class="level-meter">
+                            <span class="level-label">Input R</span>
+                            <div class="level-bar">
+                                <div class="level-fill" id="inputLevelR2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TIMELINE TAB ===== -->
+            <div class="tab-content" id="timeline-tab">
+                <div class="timeline-container">
+                    <div class="timeline-ruler">
+                        <div class="timeline-ruler-marks" id="timelineRuler"></div>
+                    </div>
+                    <div class="timeline-tracks" id="timelineTracks">
+                        <!-- Timeline tracks will be rendered here -->
+                    </div>
+                    <div class="playhead-line" id="timelinePlayhead"></div>
+                </div>
+                <div class="editing-tools">
+                    <div class="tool-group">
+                        <button class="tool-btn" id="selectTool" onclick="AudioEditor.setTool('select')">
+                            <i class="fas fa-mouse-pointer"></i>
+                            <span>Select</span>
+                        </button>
+                        <button class="tool-btn" id="cutTool" onclick="AudioEditor.setTool('cut')">
+                            <i class="fas fa-cut"></i>
+                            <span>Cut</span>
+                        </button>
+                        <button class="tool-btn" id="trimTool" onclick="AudioEditor.setTool('trim')">
+                            <i class="fas fa-crop"></i>
+                            <span>Trim</span>
+                        </button>
+                    </div>
+                    <div class="tool-group">
+                        <button class="tool-btn" onclick="AudioEditor.cut()">
+                            <i class="fas fa-cut"></i>
+                            <span>Cut</span>
+                        </button>
+                        <button class="tool-btn" onclick="AudioEditor.copy()">
+                            <i class="fas fa-copy"></i>
+                            <span>Copy</span>
+                        </button>
+                        <button class="tool-btn" onclick="AudioEditor.paste()">
+                            <i class="fas fa-paste"></i>
+                            <span>Paste</span>
+                        </button>
+                    </div>
+                    <div class="tool-group">
+                        <button class="tool-btn" onclick="AudioEditor.split()">
+                            <i class="fas fa-scissors"></i>
+                            <span>Split</span>
+                        </button>
+                        <button class="tool-btn" onclick="AudioEditor.join()">
+                            <i class="fas fa-link"></i>
+                            <span>Join</span>
+                        </button>
+                        <button class="tool-btn" onclick="AudioEditor.deleteRegion()">
+                            <i class="fas fa-trash"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                    <div class="zoom-control">
+                        <button class="tool-btn" onclick="Timeline.zoomOut()">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <input type="range" class="slider zoom-slider" id="zoomSlider" min="10" max="200" value="100" oninput="Timeline.setZoom(this.value)">
+                        <span class="zoom-value" id="zoomValue">100%</span>
+                        <button class="tool-btn" onclick="Timeline.zoomIn()">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== EFFECTS TAB ===== -->
+            <div class="tab-content" id="effects-tab">
+                <div class="effects-panel">
+                    <div class="effects-header">
+                        <div class="effects-title">Multi-Band Effects</div>
+                        <button class="effects-toggle" onclick="UI.toggleEffectsVisibility()">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Multi-Band Compressor -->
+                    <div class="multiband-effect">
+                        <div class="multiband-header">
+                            <span class="multiband-title">Multi-Band Compressor</span>
+                            <div class="multiband-toggle" id="mbCompressorToggle" onclick="MultiBandEffects.toggleCompressor(this)"></div>
+                        </div>
+                        <div class="crossover-controls">
+                            <div class="crossover-point">
+                                <div class="crossover-label">Low-Mid Crossover</div>
+                                <div class="crossover-value" id="crossover1Value">250 Hz</div>
+                                <input type="range" class="slider" min="100" max="1000" value="250" oninput="MultiBandEffects.setCrossover(1, this.value)">
+                            </div>
+                            <div class="crossover-point">
+                                <div class="crossover-label">Mid-High Crossover</div>
+                                <div class="crossover-value" id="crossover2Value">4000 Hz</div>
+                                <input type="range" class="slider" min="1000" max="10000" value="4000" oninput="MultiBandEffects.setCrossover(2, this.value)">
+                            </div>
+                        </div>
+                        <div class="frequency-bands">
+                            <div class="band-control">
+                                <div class="band-label">Low Band</div>
+                                <div class="band-frequency">20 - 250 Hz</div>
+                                <button class="band-solo" id="lowSolo" onclick="MultiBandEffects.soloBand('low', this)">Solo</button>
+                                <button class="band-mute" id="lowMute" onclick="MultiBandEffects.muteBand('low', this)">Mute</button>
+                                <div class="effect-control">
+                                    <div class="effect-label">Threshold</div>
+                                    <input type="range" class="slider" min="-40" max="0" value="-20" oninput="MultiBandEffects.setBandParam('low', 'threshold', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Ratio</div>
+                                    <input type="range" class="slider" min="1" max="20" value="4" oninput="MultiBandEffects.setBandParam('low', 'ratio', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Attack</div>
+                                    <input type="range" class="slider" min="1" max="100" value="10" oninput="MultiBandEffects.setBandParam('low', 'attack', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Release</div>
+                                    <input type="range" class="slider" min="10" max="1000" value="100" oninput="MultiBandEffects.setBandParam('low', 'release', this.value)">
+                                </div>
+                            </div>
+                            <div class="band-control">
+                                <div class="band-label">Mid Band</div>
+                                <div class="band-frequency">250 - 4000 Hz</div>
+                                <button class="band-solo" id="midSolo" onclick="MultiBandEffects.soloBand('mid', this)">Solo</button>
+                                <button class="band-mute" id="midMute" onclick="MultiBandEffects.muteBand('mid', this)">Mute</button>
+                                <div class="effect-control">
+                                    <div class="effect-label">Threshold</div>
+                                    <input type="range" class="slider" min="-40" max="0" value="-18" oninput="MultiBandEffects.setBandParam('mid', 'threshold', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Ratio</div>
+                                    <input type="range" class="slider" min="1" max="20" value="6" oninput="MultiBandEffects.setBandParam('mid', 'ratio', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Attack</div>
+                                    <input type="range" class="slider" min="1" max="100" value="5" oninput="MultiBandEffects.setBandParam('mid', 'attack', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Release</div>
+                                    <input type="range" class="slider" min="10" max="1000" value="50" oninput="MultiBandEffects.setBandParam('mid', 'release', this.value)">
+                                </div>
+                            </div>
+                            <div class="band-control">
+                                <div class="band-label">High Band</div>
+                                <div class="band-frequency">4000 - 20000 Hz</div>
+                                <button class="band-solo" id="highSolo" onclick="MultiBandEffects.soloBand('high', this)">Solo</button>
+                                <button class="band-mute" id="highMute" onclick="MultiBandEffects.muteBand('high', this)">Mute</button>
+                                <div class="effect-control">
+                                    <div class="effect-label">Threshold</div>
+                                    <input type="range" class="slider" min="-40" max="0" value="-16" oninput="MultiBandEffects.setBandParam('high', 'threshold', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Ratio</div>
+                                    <input type="range" class="slider" min="1" max="20" value="8" oninput="MultiBandEffects.setBandParam('high', 'ratio', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Attack</div>
+                                    <input type="range" class="slider" min="1" max="100" value="3" oninput="MultiBandEffects.setBandParam('high', 'attack', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Release</div>
+                                    <input type="range" class="slider" min="10" max="1000" value="30" oninput="MultiBandEffects.setBandParam('high', 'release', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic EQ -->
+                    <div class="multiband-effect">
+                        <div class="multiband-header">
+                            <span class="multiband-title">Dynamic EQ</span>
+                            <div class="multiband-toggle" id="dynamicEqToggle" onclick="MultiBandEffects.toggleDynamicEQ(this)"></div>
+                        </div>
+                        <div class="frequency-bands">
+                            <div class="band-control">
+                                <div class="band-label">Low Band</div>
+                                <div class="band-frequency">20 - 250 Hz</div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Frequency</div>
+                                    <input type="range" class="slider" min="20" max="250" value="100" oninput="MultiBandEffects.setDynamicEQParam('low', 'frequency', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Gain</div>
+                                    <input type="range" class="slider" min="-20" max="20" value="0" oninput="MultiBandEffects.setDynamicEQParam('low', 'gain', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Q</div>
+                                    <input type="range" class="slider" min="0.1" max="10" value="1" step="0.1" oninput="MultiBandEffects.setDynamicEQParam('low', 'q', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Threshold</div>
+                                    <input type="range" class="slider" min="-40" max="0" value="-20" oninput="MultiBandEffects.setDynamicEQParam('low', 'threshold', this.value)">
+                                </div>
+                            </div>
+                            <div class="band-control">
+                                <div class="band-label">Mid Band</div>
+                                <div class="band-frequency">250 - 4000 Hz</div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Frequency</div>
+                                    <input type="range" class="slider" min="250" max="4000" value="1000" oninput="MultiBandEffects.setDynamicEQParam('mid', 'frequency', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Gain</div>
+                                    <input type="range" class="slider" min="-20" max="20" value="0" oninput="MultiBandEffects.setDynamicEQParam('mid', 'gain', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Q</div>
+                                    <input type="range" class="slider" min="0.1" max="10" value="1" step="0.1" oninput="MultiBandEffects.setDynamicEQParam('mid', 'q', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Threshold</div>
+                                    <input type="range" class="slider" min="-40" max="0" value="-18" oninput="MultiBandEffects.setDynamicEQParam('mid', 'threshold', this.value)">
+                                </div>
+                            </div>
+                            <div class="band-control">
+                                <div class="band-label">High Band</div>
+                                <div class="band-frequency">4000 - 20000 Hz</div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Frequency</div>
+                                    <input type="range" class="slider" min="4000" max="20000" value="8000" oninput="MultiBandEffects.setDynamicEQParam('high', 'frequency', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Gain</div>
+                                    <input type="range" class="slider" min="-20" max="20" value="0" oninput="MultiBandEffects.setDynamicEQParam('high', 'gain', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Q</div>
+                                    <input type="range" class="slider" min="0.1" max="10" value="1" step="0.1" oninput="MultiBandEffects.setDynamicEQParam('high', 'q', this.value)">
+                                </div>
+                                <div class="effect-control">
+                                    <div class="effect-label">Threshold</div>
+                                    <input type="range" class="slider" min="-40" max="0" value="-16" oninput="MultiBandEffects.setDynamicEQParam('high', 'threshold', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="effects-grid" id="effectsGrid">
+                        <!-- Regular effects will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TRACKS TAB ===== -->
+            <div class="tab-content" id="tracks-tab">
+                <div style="padding: 1rem;">
+                    <div class="sidebar-title">Track Details</div>
+                    <div id="trackDetails">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                            Select a track to view details
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== AI PANEL ===== -->
+    <div class="ai-panel" id="aiPanel">
+        <div class="ai-header">
+            <h2 class="ai-title">🤖 AI Assistant</h2>
+            <button class="ai-close" onclick="UI.toggleAIPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="ai-section">
+            <h3 class="ai-section-title">Auto Mixing</h3>
+            <div class="ai-option" onclick="AIAssistant.autoMix()">
+                <div class="ai-option-title">🎚️ Smart Mix</div>
+                <div class="ai-option-desc">Automatically balance levels and apply professional mixing</div>
+            </div>
+            <div class="ai-option" onclick="AIAssistant.masterTrack()">
+                <div class="ai-option-title">🎯 Master Track</div>
+                <div class="ai-option-desc">Apply AI mastering for optimal loudness and clarity</div>
+            </div>
+            <div class="ai-option" onclick="AIAssistant.removeNoise()">
+                <div class="ai-option-title">🔇 Noise Reduction</div>
+                <div class="ai-option-desc">Intelligently remove background noise and artifacts</div>
+            </div>
+        </div>
+
+        <div class="ai-section">
+            <h3 class="ai-section-title">Enhancement</h3>
+            <div class="ai-option" onclick="AIAssistant.vocalEnhance()">
+                <div class="ai-option-title">🎤 Vocal Enhancement</div>
+                <div class="ai-option-desc">Enhance vocal clarity and presence</div>
+            </div>
+            <div class="ai-option" onclick="AIAssistant.bassBoost()">
+                <div class="ai-option-title">🔊 Bass Boost</div>
+                <div class="ai-option-desc">Intelligently enhance low frequencies</div>
+            </div>
+            <div class="ai-option" onclick="AIAssistant.stereoWidth()">
+                <div class="ai-option-title">🎧 Stereo Width</div>
+                <div class="ai-option-desc">Enhance stereo imaging and spatial quality</div>
+            </div>
+        </div>
+
+        <div class="ai-section">
+            <h3 class="ai-section-title">Presets</h3>
+            <div class="ai-option" onclick="AIAssistant.applyPreset('pop')">
+                <div class="ai-option-title">🎵 Pop Mix</div>
+                <div class="ai-option-desc">Apply professional pop mixing settings</div>
+            </div>
+            <div class="ai-option" onclick="AIAssistant.applyPreset('rock')">
+                <div class="ai-option-title">🎸 Rock Mix</div>
+                <div class="ai-option-desc">Powerful rock mixing with punch</div>
+            </div>
+            <div class="ai-option" onclick="AIAssistant.applyPreset('electronic')">
+                <div class="ai-option-title">🎹 Electronic</div>
+                <div class="ai-option-desc">Clean electronic mix with clarity</div>
+            </div>
+        </div>
+
+        <div class="ai-progress" id="aiProgress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Processing...</div>
+        </div>
+    </div>
+
+    <!-- ===== MASTER SECTION ===== -->
+    <div class="master-section">
+        <div class="master-title">MASTER</div>
+        <div class="meter">
+            <div class="meter-fill" id="masterMeter" style="height: 30%"></div>
+        </div>
+        <div class="effect-control">
+            <div class="effect-label">Volume</div>
+            <input type="range" class="slider master-volume" min="0" max="100" value="75" oninput="AudioEngine.setMasterVolume(this.value)">
+        </div>
+    </div>
+
+    <!-- ===== LOADING SPINNER ===== -->
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- ===== TOAST CONTAINER ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+	<script src="scripts/ai-assistant.js"></script>
+	<script src="scripts/audio-editor.js"></script>
+	<script src="scripts/audio-engine.js"></script>
+	<script src="scripts/effects-manager.js"></script>
+	<script src="scripts/multiband-effects.js"></script>
+	<script src="scripts/project-manager.js"></script>
+	<script src="scripts/recording-manager.js"></script>
+	<script src="scripts/timeline.js"></script>
+	<script src="scripts/track-manager.js"></script>
+	<script src="scripts/transport.js"></script>
+	<script src="scripts/ui-manager.js"></script>
+	<script src="scripts/main.js"></script>
+</body>
