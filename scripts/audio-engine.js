@@ -3,12 +3,16 @@
             tracks: [],
             currentTrack: null,
             masterVolume: new Tone.Volume(-6).toDestination(),
-            limiter: new Tone.Limiter(-1).connect(this.masterVolume),
+            limiter: null,
             meter: new Tone.Meter(),
             analyser: new Tone.Analyser('waveform', 256),
 
             async init() {
                 await Tone.start();
+                // Initialize limiter after masterVolume is available
+                if (!this.limiter) {
+                    this.limiter = new Tone.Limiter(-1).connect(this.masterVolume);
+                }
                 this.masterVolume.connect(this.meter);
                 this.masterVolume.connect(this.analyser);
                 MultiBandEffects.init();
@@ -41,8 +45,9 @@
                 
                 for (let file of files) {
                     if (file.type.startsWith('audio/')) {
+                        let url = null;
                         try {
-                            const url = URL.createObjectURL(file);
+                            url = URL.createObjectURL(file);
                             const buffer = await new Tone.Buffer(url);
                             const track = new Track(file.name, buffer);
                             this.tracks.push(track);
@@ -51,6 +56,11 @@
                         } catch (error) {
                             UI.showToast(`Error loading ${file.name}`, 'error');
                             console.error(error);
+                        } finally {
+                            // Revoke the object URL to prevent memory leaks
+                            if (url) {
+                                URL.revokeObjectURL(url);
+                            }
                         }
                     }
                 }
@@ -129,7 +139,7 @@
                 this.isMuted = false;
                 this.isSoloed = false;
                 this.isRecording = false;
-                this.volumeValue = 0;
+                this.volumeValue = 1; // Initialize to 1 (100%) to match Tone.Volume(0) which is unity gain
             }
 
             async start(time = Tone.now()) {
@@ -142,7 +152,9 @@
 
             setVolume(value) {
                 this.volumeValue = value;
-                const db = Tone.gainToDb(value);
+                // Clamp value to avoid -Infinity dB (when value is 0)
+                const clampedValue = Math.max(0.0001, Math.min(1, value));
+                const db = Tone.gainToDb(clampedValue);
                 this.volume.volume.value = db;
             }
 

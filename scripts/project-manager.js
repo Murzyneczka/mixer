@@ -69,7 +69,7 @@
                             },
                             chorus: {
                                 rate: track.chorus.frequency.value,
-                                depth: track.chorus.depth.value,
+                                depth: track.chorus.depth,
                                 wet: track.chorus.wet.value
                             }
                         }

@@ -73,9 +73,8 @@
 
             updatePlayhead() {
                 const playhead = document.getElementById('timelinePlayhead');
-                const position = Tone.Transport.position;
-                const seconds = parseFloat(position);
-                playhead.style.left = (seconds * this.pixelsPerSecond) + 'px';
+                const position = Tone.Transport.seconds;
+                playhead.style.left = (position * this.pixelsPerSecond) + 'px';
                 
                 if (Transport.isPlaying) {
                     requestAnimationFrame(() => this.updatePlayhead());

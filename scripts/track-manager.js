@@ -37,7 +37,12 @@ const TrackManager = {
                 this.updateTrackDetails(track);
                 
                 if (window.innerWidth <= 768) {
-                    UI.switchTab('waveform');
+                    UI.switchTab('waveform', null);
+                    // Manually update active tab since we don't have an event target
+                    document.querySelectorAll('.tab-nav-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    document.querySelector('.tab-nav-item:first-child').classList.add('active');
                 }
             },
 
