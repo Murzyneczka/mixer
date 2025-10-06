@@ -1,5 +1,5 @@
 // ===== timeline.js =====
-        const Timeline = {
+        window.Timeline = {
             zoom: 100,
             pixelsPerSecond: 100,
             timelineDuration: 30, // 30 seconds default view

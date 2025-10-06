@@ -1,5 +1,5 @@
 // ===== recording-manager.js =====
-        const RecordingManager = {
+        window.RecordingManager = {
             mediaRecorder: null,
             audioChunks: [],
             audioContext: null,

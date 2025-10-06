@@ -1,4 +1,4 @@
-const TrackManager = {
+window.TrackManager = {
             addTrackToList(track) {
                 const trackList = document.getElementById('trackList');
                 const trackElement = document.createElement('div');

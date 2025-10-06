@@ -1,0 +1,25 @@
+{
+  "name": "ai-audio-mixer-pro",
+  "version": "1.0.0",
+  "description": "AI Audio Mixer Pro - Advanced DAW with Multi-Band Effects",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . -l 3000"
+  },
+  "keywords": [
+    "audio",
+    "mixer",
+    "daw",
+    "tone.js",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "tone": "^14.7.77"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

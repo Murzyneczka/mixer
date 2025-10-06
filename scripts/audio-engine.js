@@ -1,5 +1,5 @@
 // ===== audio-engine.js =====
-        const AudioEngine = {
+        window.AudioEngine = {
             tracks: [],
             currentTrack: null,
             masterVolume: new Tone.Volume(-6).toDestination(),
@@ -41,28 +41,62 @@
             },
 
             async loadAudioFiles(files) {
+                if (!files || files.length === 0) {
+                    UI.showToast('No files selected', 'error');
+                    return;
+                }
+                
                 await this.init();
+                UI.showLoading();
+                
+                let loadedCount = 0;
+                let errorCount = 0;
                 
                 for (let file of files) {
-                    if (file.type.startsWith('audio/')) {
-                        let url = null;
-                        try {
-                            url = URL.createObjectURL(file);
-                            const buffer = await new Tone.Buffer(url);
-                            const track = new Track(file.name, buffer);
-                            this.tracks.push(track);
-                            TrackManager.addTrackToList(track);
-                            UI.showToast(`Loaded: ${file.name}`, 'success');
-                        } catch (error) {
-                            UI.showToast(`Error loading ${file.name}`, 'error');
-                            console.error(error);
-                        } finally {
-                            // Revoke the object URL to prevent memory leaks
-                            if (url) {
-                                URL.revokeObjectURL(url);
-                            }
+                    // Validate file type
+                    if (!file.type.startsWith('audio/')) {
+                        UI.showToast(`Skipped ${file.name}: Not an audio file`, 'error');
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    // Validate file size (max 50MB)
+                    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+                    if (file.size > maxSize) {
+                        UI.showToast(`Skipped ${file.name}: File too large (max 50MB)`, 'error');
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    let url = null;
+                    try {
+                        url = URL.createObjectURL(file);
+                        const buffer = await Tone.Buffer.load(url);
+                        const track = new Track(file.name, buffer);
+                        this.tracks.push(track);
+                        TrackManager.addTrackToList(track);
+                        loadedCount++;
+                        console.log(`Successfully loaded: ${file.name}`);
+                    } catch (error) {
+                        UI.showToast(`Error loading ${file.name}: ${error.message}`, 'error');
+                        console.error(`Error loading ${file.name}:`, error);
+                        errorCount++;
+                    } finally {
+                        // Revoke the object URL to prevent memory leaks
+                        if (url) {
+                            URL.revokeObjectURL(url);
                         }
                     }
+                }
+                
+                UI.hideLoading();
+                
+                // Show summary
+                if (loadedCount > 0) {
+                    UI.showToast(`Successfully loaded ${loadedCount} file${loadedCount > 1 ? 's' : ''}`, 'success');
+                }
+                if (errorCount > 0) {
+                    UI.showToast(`Failed to load ${errorCount} file${errorCount > 1 ? 's' : ''}`, 'error');
                 }
                 
                 if (this.tracks.length > 0 && !this.currentTrack) {
@@ -70,6 +104,12 @@
                 }
                 
                 Timeline.init();
+                
+                // Reset file input
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) {
+                    fileInput.value = '';
+                }
             },
 
             setMasterVolume(value) {
@@ -102,7 +142,7 @@
         };
 
         // ===== Track Class =====
-        class Track {
+        window.Track = class Track {
             constructor(name, buffer) {
                 this.id = Date.now() + Math.random();
                 this.name = name;

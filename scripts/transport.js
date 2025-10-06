@@ -1,5 +1,5 @@
 // ===== transport.js =====
-        const Transport = {
+        window.Transport = {
             isPlaying: false,
             isLooping: false,
             loopStart: 0,

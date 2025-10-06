@@ -1,5 +1,5 @@
         // ===== ui-manager.js =====
-        const UI = {
+        window.UI = {
             currentTab: 'waveform',
             effectsVisible: true,
 

@@ -1,5 +1,5 @@
 // ===== effects-manager.js =====
-        const EffectsManager = {
+        window.EffectsManager = {
             effects: [
                 {
                     name: 'Reverb',
