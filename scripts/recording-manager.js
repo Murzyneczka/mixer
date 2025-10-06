@@ -107,6 +107,9 @@
 
             async processRecording() {
                 try {
+                    // Ensure audio engine is initialized
+                    await AudioEngine.init();
+                    
                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     

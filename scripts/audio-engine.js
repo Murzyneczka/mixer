@@ -107,7 +107,7 @@
                 
                 // Reset file input
                 const fileInput = document.getElementById('fileInput');
-                if (fileInput) {
+                if (fileInput && fileInput.value !== undefined) {
                     fileInput.value = '';
                 }
             },
